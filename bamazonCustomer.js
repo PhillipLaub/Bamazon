@@ -13,34 +13,140 @@
 // This means updating the SQL database to reflect the remaining quantity.
 // Once the update goes through, show the customer the total cost of their purchase.
 
-var mysql = require("mysql");
-var inquirer = require("inquirer");
+const mysql = require("mysql");
+const inquirer = require("inquirer");
+const table = require("table");
 
-var connection = mysql.createConnection({
+const connection = mysql.createConnection({
   host: "localhost",
   port: 3306,
   user: "root",
-  password: "jad3fir3",
+  password: "",
   database: "bamazon"
 });
 
-connection.connect(function(err) {
-  if (err) throw err;
-  readProducts();
-});
+readProducts();
+
+function bamazon() {
+  inquirer
+    .prompt([
+      {
+        type: "input",
+        name: "item_id",
+        message:
+          "What item which you would like to purchase? \n(Enter Item Id): "
+      },
+      {
+        type: "input",
+        name: "stock_quantity",
+        message: "How many units would you like to purchase?"
+      }
+    ])
+    .then(function(input) {
+      let item = input.item_id;
+      let quantity = input.stock_quantity;
+
+      connection.query(
+        "SELECT * FROM products WHERE ?",
+        { item_id: item },
+        function(err, res) {
+          if (err) throw err;
+
+          if (res.length === 0) {
+            console.log(
+              "---------------------------------------------------------------------"
+            );
+
+            console.log(
+              "\nERROR!!! You entered an invalid Item Id, Please try again.\n"
+            );
+            console.log(
+              "---------------------------------------------------------------------"
+            );
+
+            readProducts();
+          } else {
+            let product = res[0];
+
+            if (quantity <= product.stock_quantity) {
+              console.log(
+                "---------------------------------------------------------------------\n"
+              );
+              console.log(
+                "Your product is in stock, now placing your order!\n"
+              );
+
+              let updateStock =
+                "UPDATE products SET stock_quantity = " +
+                (product.stock_quantity - quantity) +
+                " WHERE item_id = " +
+                item;
+
+              connection.query(updateStock, function(err, res) {
+                if (err) throw err;
+                console.log(
+                  "---------------------------------------------------------------------"
+                );
+                console.log(
+                  "\nOrder Completed!\nYour total is $" +
+                    product.price * quantity
+                );
+                console.log("Thank you for your purchase!\n");
+                console.log(
+                  "---------------------------------------------------------------------"
+                );
+
+                connection.end();
+              });
+            } else {
+              console.log(
+                "---------------------------------------------------------------------"
+              );
+              console.log(
+                "\nThere is not currently enough product in stock, Please try again.\n"
+              );
+              console.log(
+                "---------------------------------------------------------------------"
+              );
+
+              readProducts();
+            }
+          }
+        }
+      );
+    });
+}
 
 function readProducts() {
-  console.log("------------------------------------------------------------------------------------------------------------------------");
-  console.log("\nAll Products available for SALE!!!\n");
+  console.log(
+    "------------------------------------------------------------------------------------------------------------------------"
+  );
+  console.log("\nHere are the products that are available for SALE!!!\n");
   connection.query("SELECT * FROM products", function(err, res) {
     if (err) throw err;
     // Log all results of the SELECT statement
-    console.log("------------------------------------------------------------------------------------------------------------------------");
-    for (let i =0; i < res.length; i++) {
-      console.log("Item Id: " + res[i].item_id + " || Product Name: " + res[i].product_name + " || Dept. Name: " + res[i].department_name + " || Price: $"+ res[i].price + " || Stock Quantity: " + res[i].stock_quantity);
-      console.log("------------------------------------------------------------------------------------------------------------------------");
+    console.log(
+      "------------------------------------------------------------------------------------------------------------------------"
+    );
+    for (let i = 0; i < res.length; i++) {
+      console.log(
+        "Item Id: " +
+          res[i].item_id +
+          " || Product Name: " +
+          res[i].product_name +
+          " || Dept. Name: " +
+          res[i].department_name +
+          " || Price: $" +
+          res[i].price +
+          " || Stock Quantity: " +
+          res[i].stock_quantity
+      );
+      console.log(
+        "------------------------------------------------------------------------------------------------------------------------"
+      );
     }
-    
-    connection.end();
+    console.log("\n");
+    bamazon();
+    // connection.end();
   });
 }
