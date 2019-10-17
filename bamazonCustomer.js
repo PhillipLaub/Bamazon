@@ -34,12 +34,14 @@ function bamazon() {
         type: "input",
         name: "item_id",
         message:
-          "What item which you would like to purchase? \n(Enter Item Id): "
+          "What item which you would like to purchase? \n(Enter Item Id): ",
+          filter: Number
       },
       {
         type: "input",
         name: "stock_quantity",
-        message: "How many units would you like to purchase?"
+        message: "How many units would you like to purchase?",
+        filter:Number
       }
     ])
     .then(function(input) {
